@@ -177,7 +177,12 @@ extract_codec_map_media([Media|Rest], Codecs, Medias) ->
 %% @private
 extract_codec_map_fmt([], Codecs, Outs) ->
     {Codecs, lists:reverse(Outs)};
-
+extract_codec_map_fmt([{Key, [Values]}|Rest], Codecs, Outs) ->
+    % if this is just a value, which accidentally is equal to one of the codec ids,
+    % we should handle it like a value
+    % so that an entry like a=mim:0 doesn't end up in a codec definition
+    Outs2 = [{Key, [Values]}|Outs],
+    extract_codec_map_fmt(Rest, Codecs, Outs2);
 extract_codec_map_fmt([{Key, [Fmt|Values2]=Values}|Rest], Codecs, Outs) ->
     case lists:keyfind(Fmt, 1, Codecs) of
         {Fmt, OldName, List} ->
