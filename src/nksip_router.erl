@@ -46,7 +46,7 @@
     any() | {error, too_many_calls | looped_process | {exit, term()}}.
 
 send_work_sync(SrvId, CallId, Work) ->
-    Name = name(CallId),
+    Name = name(SrvId, CallId),
     Timeout = nksip_config_cache:sync_call_time(),
     WorkSpec = {send_work_sync, SrvId, CallId, Work, self()},
     case nklib_util:call(Name, WorkSpec, Timeout) of
@@ -66,7 +66,7 @@ send_work_sync(SrvId, CallId, Work) ->
     ok | {error, too_many_calls | looped_process | {exit, term()}}.
 
 incoming_sync(#sipmsg{srv_id=SrvId, call_id=CallId}=SipMsg) ->
-    Name = name(CallId),
+    Name = name(SrvId, CallId),
     Timeout = nksip_config_cache:sync_call_time(),
     case nklib_util:call(Name, {incoming, SipMsg}, Timeout) of
         {error, {exit, Exit}} -> 
@@ -82,7 +82,7 @@ incoming_sync(#sipmsg{srv_id=SrvId, call_id=CallId}=SipMsg) ->
     ok | {error, too_many_calls | looped_process | {exit, term()}}.
 
 incoming_sync(SrvId, CallId, NkPort, Msg) ->
-    Name = name(CallId),
+    Name = name(SrvId, CallId),
     Timeout = nksip_config_cache:sync_call_time(),
     case nklib_util:call(Name, {incoming, SrvId, CallId, NkPort, Msg}, Timeout) of
         {error, {exit, Exit}} -> 
@@ -282,14 +282,13 @@ terminate(_Reason, _State) ->
 %% Internal
 %% ===================================================================
 
+-type server_name() :: atom().
+-type server_ref() :: server_name() | {server_name(), node()}.
 %% @private 
--spec name(nksip:call_id()) ->
-    atom().
+-spec name(nksip:srv_id(), nksip:call_id()) -> server_ref().
 
-name(CallId) ->
-    Pos = erlang:phash2(CallId) rem nksip_config_cache:msg_routers(),
-    pos2name(Pos).
-
+name(SrvId, CallId) ->
+    SrvId:router_name(SrvId, CallId).
 
 %% @private
 -spec send_work_sync(nksip:srv_id(), nksip:call_id(), nksip_call_worker:work(), 
@@ -356,7 +355,7 @@ do_call_start(SrvId, SrvPid, CallId, Work, From, State) ->
     ok.
 
 send_work_async(SrvId, CallId, Work) ->
-    send_work_async(name(CallId), SrvId, CallId, Work).
+    send_work_async(name(SrvId, CallId), SrvId, CallId, Work).
 
 
 %% @private Sends an asynchronous piece of {@link nksip_call_worker:work()} to a call.

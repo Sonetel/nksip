@@ -52,6 +52,8 @@
 % -export([handle_call/3, handle_cast/2, handle_info/2]).
 -export([nks_sip_debug/3]).
 
+-export([router_name/2]).
+
 -type continue() :: continue | {continue, list()}.
 
 
@@ -858,3 +860,6 @@ nks_sip_transport_uas_sent(_Resp) ->
 nks_sip_debug(_SrvId, _CallId, _Info) ->
     ok.
 
+router_name(SrvId, CallId) ->
+    Pos = erlang:phash2(CallId) rem nksip_config_cache:msg_routers(),
+    nksip_router:pos2name(Pos).
